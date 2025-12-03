@@ -4,8 +4,7 @@ import requests
 import yfinance as yf
 from GoogleNews import GoogleNews 
 from utils.logger import setup_logging
-from utils.models import Settings
-from tradingview_ta import TA_Handler, Interval, Exchange
+from tradingview_ta import TA_Handler, Interval
 
 _logger = setup_logging()
 
@@ -189,87 +188,6 @@ def _fetch_raw_news(ticker: str, limit: int = 5) -> list[dict]:
         _logger.error(f"Error fetching Google News for {ticker}: {e}")
     
     return news_list
-
-
-async def get_robust_stock_news(ticker: str, limit: int = 5) -> str:
-    """
-    Obtiene noticias de Yahoo Finance y Google News, luego usa el LLM
-    para generar un resumen consolidado de todas las noticias.
-    """
-    # 1. Obtener noticias raw
-    news_list = _fetch_raw_news(ticker, limit)
-    
-    if not news_list:
-        return f"No recent news found for {ticker}."
-    
-    # 2. Formatear noticias para el LLM
-    news_text = f"News articles for {ticker}:\n\n"
-    for i, news in enumerate(news_list, 1):
-        news_text += f"--- Article {i} ---\n"
-        news_text += f"Title: {news['title']}\n"
-        news_text += f"Source: {news['publisher']} ({news['source']})\n"
-        news_text += f"Date: {news['date']}\n"
-        if news['content']:
-            news_text += f"Content: {news['content']}\n"
-        news_text += "\n"
-    
-    # 3. Usar LLM para resumir
-    prompt = f"""Eres un analista financiero experto. Analiza las siguientes noticias sobre {ticker} y genera un resumen ejecutivo.
-
-{news_text}
-
----
-
-Genera un resumen en español que incluya:
-
-1. **Resumen General**: Un párrafo de 2-3 oraciones con los puntos más importantes de todas las noticias.
-
-2. **Eventos Clave**: Lista con viñetas de los eventos o anuncios más relevantes mencionados.
-
-3. **Sentimiento del Mercado**: Indica si las noticias son predominantemente positivas, negativas o neutrales para la acción/ETF, y por qué.
-
-4. **Impacto Potencial**: Breve análisis de cómo estas noticias podrían afectar el precio a corto plazo.
-
-Sé conciso, directo y enfócate en información accionable para inversores.
-"""
-
-    try:
-        response = await Settings.llm.acomplete(prompt)
-        return response.text
-    except Exception as e:
-        _logger.error(f"Error generating news summary with LLM for {ticker}: {e}")
-        # Fallback: retornar noticias sin resumir
-        return _format_news_fallback(news_list)
-
-
-def get_robust_stock_news_sync(ticker: str, limit: int = 5) -> str:
-    """
-    Versión síncrona para obtener noticias sin resumen del LLM.
-    Útil para casos donde no se puede usar async.
-    """
-    news_list = _fetch_raw_news(ticker, limit)
-    
-    if not news_list:
-        return f"No recent news found for {ticker}."
-    
-    return _format_news_fallback(news_list)
-
-
-def _format_news_fallback(news_list: list[dict]) -> str:
-    """
-    Formatea las noticias sin usar el LLM (fallback).
-    """
-    formatted = ["Recent News Analysis:\n"]
-    
-    for news in news_list:
-        formatted.append(f"**{news['title']}**")
-        formatted.append(f"  Source: {news['publisher']} ({news['source']}) | Date: {news['date']}")
-        if news['content']:
-            truncated = news['content'][:500] + "..." if len(news['content']) > 500 else news['content']
-            formatted.append(f"  Summary: {truncated}")
-        formatted.append("")
-    
-    return "\n".join(formatted)
 
 def get_stock_info(ticker: str) -> dict:
     """
