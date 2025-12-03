@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from research_stocks.data_fetchers import get_robust_stock_news
+from research_stocks.news import get_complete_news, get_multi_source_news
 from research_stocks.schemas import AnalysisRequest, AnalysisResponse
 from services.stock_manager import stock_manager
 
@@ -56,29 +56,34 @@ async def get_instrument_data(ticker: str):
         raise HTTPException(status_code=500, detail=f"Error obteniendo datos de {ticker}: {str(e)}")
 
 @router.get("/news/{ticker}")
-async def get_instrument_news(ticker: str):
+async def get_instrument_news(ticker: str, include_articles: bool = True):
     """
     Retorna las noticias relacionadas con un ticker.
-    Usa el cache si existe, si no obtiene las noticias directamente.
+    
+    Query params:
+        include_articles: Si es True, retorna resumen + artículos. Si es False, solo resumen.
     """
     try:
         ticker = ticker.upper()
         
-        # Verificar si está en cache
-        if ticker in stock_manager.instruments:
-            entry = stock_manager.instruments[ticker]
-            news = entry["data"].news
-            cached = True
+        if include_articles:
+            # Retorna resumen + artículos completos
+            news_data = await get_complete_news(ticker)
+            return {
+                "ticker": ticker,
+                "summary": news_data["summary"],
+                "articles": news_data["articles"],
+                "sources_used": news_data["sources_used"],
+                "total_articles": news_data["total_articles"],
+                "fetch_timestamp": news_data["fetch_timestamp"]
+            }
         else:
-            # No está en cache, obtener noticias directamente
-            news = await get_robust_stock_news(ticker)
-            cached = False
-        
-        return {
-            "ticker": ticker,
-            "cached": cached,
-            "news": news
-        }
+            # Solo retorna el resumen
+            summary = await get_multi_source_news(ticker)
+            return {
+                "ticker": ticker,
+                "summary": summary
+            }
         
     except Exception as e:
         import traceback
