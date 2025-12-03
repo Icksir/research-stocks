@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     google_api_key: Optional[str] = None
     tavily_api_key: Optional[str] = None
     google_news_api_key: Optional[str] = None
+    polygon_api_key: Optional[str] = None
+    FINNHUB_API_KEY: Optional[str] = None
     
     # CORS
     cors_origins: list = ["http://localhost:8100",

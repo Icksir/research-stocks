@@ -4,10 +4,10 @@ from research_stocks.data_fetchers import (
     detect_exchange,
     get_stock_info, 
     get_stocktwits_data, 
-    get_robust_stock_news,
     get_tradingview_analysis,
     get_tradingview_multi_timeframe 
 )
+from research_stocks.news import get_complete_news
 from research_stocks.schemas import AnalystInfo, DebtMetrics, DividendMetrics, FinancialMetricsSchema, GrowthMetrics, MovingAveragesAnalysis, MultiTimeframeSchema, OptionsMove, OptionsVolatilitySchema, OscillatorsAnalysis, ProfitabilityMetrics, SentimentAnalysisSchema, StockDataSchema, StockInfoSchema, StockTwitsMessage, TechnicalIndicators, TimeframeAnalysis, TradingViewAnalysisSchema, TradingViewSummary, ValuationMetrics
 from utils.logger import setup_logging
 
@@ -45,12 +45,13 @@ class StockData:
             _logger.warning(f"⚠️ Error fetching stock info for {self.ticker}: {e}")
             self._raw_info = {"ticker": self.ticker, "error": str(e)}
         
-        # 2. News (async)
+        # 2. News (async) - AHORA CON MULTI-FUENTE
         try:
-            self._raw_news = await get_robust_stock_news(self.ticker)
+            self._raw_news = await get_complete_news(self.ticker)
         except Exception as e:
             _logger.warning(f"⚠️ Error fetching news for {self.ticker}: {e}")
-            self._raw_news = "News data unavailable."
+            self._raw_news = {"summary": "News data unavailable.", "articles": []}
+
         
         # 3. Sentiment
         try:
@@ -94,8 +95,8 @@ class StockData:
         """Actualiza solo las noticias."""
         _logger.info(f"🔄 Refreshing news for {self.ticker}...")
         try:
-            new_news = await get_robust_stock_news(self.ticker)
-            if new_news and "Error" not in new_news:
+            new_news = await get_complete_news(self.ticker)
+            if new_news:
                 self._raw_news = new_news
         except Exception as e:
             _logger.error(f"⚠️ Error refreshing news for {self.ticker}: {e}")

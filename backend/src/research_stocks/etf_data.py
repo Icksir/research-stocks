@@ -5,9 +5,8 @@ from research_stocks.etf_fetchers import (
 )
 from research_stocks.data_fetchers import (
     check_options_volatility,
-    get_stocktwits_data,
-    get_robust_stock_news
-)
+    get_stocktwits_data)
+from research_stocks.news import get_complete_news
 from research_stocks.schemas import (
     ETFDataSchema,
     ETFInfoSchema,
@@ -68,12 +67,12 @@ class ETFData:
             _logger.warning(f"⚠️ Error fetching sectors for {self.ticker}: {e}")
             self._raw_sectors = {"ticker": self.ticker, "sectors": {}}
         
-        # 4. News
+        # 4. News - AHORA CON MULTI-FUENTE
         try:
-            self._raw_news = await get_robust_stock_news(self.ticker)
+            self._raw_news = await get_complete_news(self.ticker)
         except Exception as e:
             _logger.warning(f"⚠️ Error fetching news for {self.ticker}: {e}")
-            self._raw_news = "News data unavailable."
+            self._raw_news = {"summary": "News data unavailable.", "articles": []}
         
         # 5. Sentiment (StockTwits)
         try:
@@ -100,8 +99,8 @@ class ETFData:
         """Actualiza solo las noticias."""
         _logger.info(f"🔄 Refreshing news for ETF {self.ticker}...")
         try:
-            new_news = await get_robust_stock_news(self.ticker)
-            if new_news and "Error" not in new_news:
+            new_news = await get_complete_news(self.ticker)
+            if new_news:
                 self._raw_news = new_news
         except Exception as e:
             _logger.error(f"⚠️ Error refreshing news for {self.ticker}: {e}")

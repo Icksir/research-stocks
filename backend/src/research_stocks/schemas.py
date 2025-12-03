@@ -169,8 +169,8 @@ class StockDataSchema(BaseModel):
     # sentiment_analysis: SentimentAnalysisSchema
     options_volatility: OptionsVolatilitySchema
     
-    # Noticias
-    news: Any
+    # Noticias (ahora incluye summary y articles)
+    news: dict = Field(default_factory=lambda: {"summary": "", "articles": []})
 
     class Config:
         arbitrary_types_allowed = True
@@ -266,8 +266,8 @@ class ETFDataSchema(BaseModel):
     # sentiment_analysis: SentimentAnalysisSchema
     options_volatility: OptionsVolatilitySchema
     
-    # Noticias
-    news: Any
+    # Noticias (ahora incluye summary y articles)
+    news: dict = Field(default_factory=lambda: {"summary": "", "articles": []})
 
     class Config:
         arbitrary_types_allowed = True
