@@ -1,5 +1,7 @@
-import type { OptionsData } from '../../api';
+import type { OptionsVolatility, OptionsMove } from '../../api';
 import { Tooltip, InfoTooltip } from './Tooltip';
+
+type OptionsData = OptionsVolatility;
 
 interface OptionsTabProps {
   data: OptionsData;
@@ -143,13 +145,13 @@ const TOOLTIPS = {
 
 export function OptionsTab({ data }: OptionsTabProps) {
   // Calcular estadísticas
-  const calls = data.top_unusual_moves?.filter(m => m.type === 'CALL') || [];
-  const puts = data.top_unusual_moves?.filter(m => m.type === 'PUT') || [];
+  const calls = data.top_unusual_moves?.filter((m: OptionsMove) => m.type === 'CALL') || [];
+  const puts = data.top_unusual_moves?.filter((m: OptionsMove) => m.type === 'PUT') || [];
   
-  const totalCallVolume = calls.reduce((acc, m) => acc + (m.volume || 0), 0);
-  const totalPutVolume = puts.reduce((acc, m) => acc + (m.volume || 0), 0);
-  const totalCallOI = calls.reduce((acc, m) => acc + (m.oi || 0), 0);
-  const totalPutOI = puts.reduce((acc, m) => acc + (m.oi || 0), 0);
+  const totalCallVolume = calls.reduce((acc: number, m: OptionsMove) => acc + (m.volume || 0), 0);
+  const totalPutVolume = puts.reduce((acc: number, m: OptionsMove) => acc + (m.volume || 0), 0);
+  const totalCallOI = calls.reduce((acc: number, m: OptionsMove) => acc + (m.oi || 0), 0);
+  const totalPutOI = puts.reduce((acc: number, m: OptionsMove) => acc + (m.oi || 0), 0);
 
   const callPutVolumeRatio = totalPutVolume > 0 
     ? (totalCallVolume / totalPutVolume).toFixed(2) 
@@ -184,7 +186,7 @@ export function OptionsTab({ data }: OptionsTabProps) {
 
   // Obtener el movimiento más significativo
   const topMove = data.top_unusual_moves?.[0];
-  const highestRatio = data.top_unusual_moves?.reduce((max, m) => {
+  const highestRatio = data.top_unusual_moves?.reduce((max: number, m: OptionsMove) => {
     const ratio = typeof m.ratio === 'number' ? m.ratio : parseFloat(String(m.ratio) || '0');
     return ratio > max ? ratio : max;
   }, 0) || 0;
@@ -550,7 +552,7 @@ export function OptionsTab({ data }: OptionsTabProps) {
                 </tr>
               </thead>
               <tbody>
-                {data.top_unusual_moves.map((move, idx) => {
+                {data.top_unusual_moves.map((move: OptionsMove, idx: number) => {
                   const strikeVsPrice = data.price 
                     ? ((move.strike - data.price) / data.price * 100)
                     : null;

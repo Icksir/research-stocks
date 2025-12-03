@@ -1,4 +1,5 @@
-export type TabType = 'analysis' | 'technical' | 'financials' | 'options';
+export type TabType = 'analysis' | 'technical' | 'financials' | 'options' | 'news';
+export type ETFTabType = 'analysis' | 'etf-info' | 'holdings' | 'sectors' | 'options' | 'news';
 
 export interface StockInfo {
   ticker?: string;

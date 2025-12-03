@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { analyzeInstrument, type BackendAnalysisResponse } from './api';
+import { getCompleteInstrumentData, type InstrumentDataResponse } from './api';
 import { SearchBar } from './components/SearchBar';
 import { AnalysisReport } from './components/AnalysisReport';
 
@@ -16,7 +16,8 @@ function normalizeInstrumentType(type: string): 'Stock' | 'ETF' {
 }
 
 function App() {
-  const [analysis, setAnalysis] = useState<BackendAnalysisResponse | null>(null);
+  const [instrumentData, setInstrumentData] = useState<InstrumentDataResponse | null>(null);
+  const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTicker, setCurrentTicker] = useState<string>('');
@@ -25,30 +26,32 @@ function App() {
   const handleSearch = async (ticker: string) => {
     setLoading(true);
     setError(null);
+    setInstrumentData(null);
     setAnalysis(null);
     setCurrentTicker(ticker);
 
     try {
-      const result = await analyzeInstrument(ticker);
-      setAnalysis(result);
+      const result = await getCompleteInstrumentData(ticker);
+      setInstrumentData(result.data);
+      setAnalysis(result.analysis);
       
-      const normalizedType = normalizeInstrumentType(result.instrument_type);
+      const normalizedType = normalizeInstrumentType(result.data.instrument_type);
       
       setHistory(prev => {
-        const exists = prev.some(item => item.ticker === result.ticker);
+        const exists = prev.some(item => item.ticker === result.data.ticker);
         if (exists) {
           return [
-            { ticker: result.ticker, type: normalizedType, timestamp: new Date() },
-            ...prev.filter(item => item.ticker !== result.ticker)
+            { ticker: result.data.ticker, type: normalizedType, timestamp: new Date() },
+            ...prev.filter(item => item.ticker !== result.data.ticker)
           ];
         }
         return [
-          { ticker: result.ticker, type: normalizedType, timestamp: new Date() },
+          { ticker: result.data.ticker, type: normalizedType, timestamp: new Date() },
           ...prev
         ].slice(0, 20);
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido al analizar el instrumento');
+      setError(err instanceof Error ? err.message : 'Error desconocido al obtener datos del instrumento');
     } finally {
       setLoading(false);
     }
@@ -164,11 +167,11 @@ function App() {
             </div>
           )}
 
-          {analysis && !loading && (
-            <AnalysisReport data={analysis} />
+          {instrumentData && !loading && (
+            <AnalysisReport data={instrumentData} analysis={analysis ?? undefined} />
           )}
 
-          {!loading && !error && !analysis && (
+          {!loading && !error && !instrumentData && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <span className="text-6xl mb-4">🔍</span>
               <h2 className="text-2xl font-bold text-gray-700 mb-2">
