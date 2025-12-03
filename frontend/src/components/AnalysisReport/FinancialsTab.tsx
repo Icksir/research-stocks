@@ -1,5 +1,7 @@
 import type { FinancialMetrics, StockInfo } from './types';
 import { MetricCard, SectionCard } from './MetricCard';
+import { Tooltip } from './Tooltip';
+import { getMetricTooltip, MetricTooltipContent } from './metricTooltips';
 import { formatLargeNumber, formatPercent, formatDecimal, formatPrice, getRecommendationStyle, getValueStatus } from './helpers';
 
 interface FinancialsTabProps {
@@ -103,48 +105,48 @@ export function FinancialsTab({ data, info }: FinancialsTabProps) {
                 label="EPS (TTM)" 
                 value={formatDecimal(profitability.eps_trailing)}
                 colorClass={getValueStatus(profitability.eps_trailing, { good: 0, bad: -Infinity })}
-                tooltip="Earnings Per Share - Ganancias por acción (últimos 12 meses)"
+                metricKey="eps_trailing"
               />
               <MetricCard 
                 label="EPS Forward" 
                 value={formatDecimal(profitability.eps_forward)}
                 colorClass={getValueStatus(profitability.eps_forward, { good: 0, bad: -Infinity })}
-                tooltip="Ganancias por acción proyectadas"
+                metricKey="eps_forward"
               />
               <MetricCard 
                 label="Margen Bruto" 
                 value={formatPercent(profitability.gross_margin)}
                 colorClass={getValueStatus(profitability.gross_margin, { good: 0.4, bad: 0.2 })}
-                tooltip="Gross Margin - % de ingresos después del costo de bienes"
+                metricKey="gross_margin"
               />
               <MetricCard 
                 label="Margen Operativo" 
                 value={formatPercent(profitability.operating_margin)}
                 colorClass={getValueStatus(profitability.operating_margin, { good: 0.15, bad: 0.05 })}
-                tooltip="Operating Margin - % de ingresos después de gastos operativos"
+                metricKey="operating_margin"
               />
               <MetricCard 
                 label="Margen Neto" 
                 value={formatPercent(profitability.profit_margin)}
                 colorClass={getValueStatus(profitability.profit_margin, { good: 0.1, bad: 0 })}
-                tooltip="Net Profit Margin - % de ingresos que queda como ganancia"
+                metricKey="profit_margin"
               />
               <MetricCard 
                 label="Margen EBITDA" 
                 value={formatPercent(profitability.ebitda_margin)}
-                tooltip="EBITDA Margin"
+                metricKey="ebitda_margin"
               />
               <MetricCard 
                 label="ROE" 
                 value={formatPercent(profitability.roe)}
                 colorClass={getValueStatus(profitability.roe, { good: 0.15, bad: 0.05 })}
-                tooltip="Return on Equity - Retorno sobre capital"
+                metricKey="roe"
               />
               <MetricCard 
                 label="ROA" 
                 value={formatPercent(profitability.roa)}
                 colorClass={getValueStatus(profitability.roa, { good: 0.05, bad: 0.02 })}
-                tooltip="Return on Assets - Retorno sobre activos"
+                metricKey="roa"
               />
             </div>
           </SectionCard>
@@ -158,40 +160,40 @@ export function FinancialsTab({ data, info }: FinancialsTabProps) {
                 label="P/E (TTM)" 
                 value={formatDecimal(valuation.pe_trailing)}
                 colorClass={getValueStatus(valuation.pe_trailing, { good: 15, bad: 30, inverse: true })}
-                tooltip="Price to Earnings - Precio/Ganancias (últimos 12 meses)"
+                metricKey="pe_trailing"
               />
               <MetricCard 
                 label="P/E Forward" 
                 value={formatDecimal(valuation.pe_forward)}
                 colorClass={getValueStatus(valuation.pe_forward, { good: 15, bad: 30, inverse: true })}
-                tooltip="P/E proyectado"
+                metricKey="pe_forward"
               />
               <MetricCard 
                 label="PEG Ratio" 
                 value={valuation.peg_ratio != null ? formatDecimal(valuation.peg_ratio) : 'N/A'}
                 colorClass={getValueStatus(valuation.peg_ratio, { good: 1, bad: 2, inverse: true })}
-                tooltip="Price/Earnings to Growth - P/E ajustado por crecimiento"
+                metricKey="peg_ratio"
               />
               <MetricCard 
                 label="P/B" 
                 value={formatDecimal(valuation.price_to_book)}
-                tooltip="Price to Book - Precio/Valor en libros"
+                metricKey="price_to_book"
               />
               <MetricCard 
                 label="P/S" 
                 value={formatDecimal(valuation.price_to_sales)}
-                tooltip="Price to Sales - Precio/Ventas"
+                metricKey="price_to_sales"
               />
               <MetricCard 
                 label="EV/EBITDA" 
                 value={formatDecimal(valuation.ev_to_ebitda)}
                 colorClass={getValueStatus(valuation.ev_to_ebitda, { good: 10, bad: 20, inverse: true })}
-                tooltip="Enterprise Value / EBITDA"
+                metricKey="ev_to_ebitda"
               />
               <MetricCard 
                 label="EV/Revenue" 
                 value={formatDecimal(valuation.ev_to_revenue)}
-                tooltip="Enterprise Value / Ingresos"
+                metricKey="ev_to_revenue"
               />
             </div>
           </SectionCard>
@@ -216,7 +218,7 @@ export function FinancialsTab({ data, info }: FinancialsTabProps) {
               
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-gray-600 mb-3">Ratios de Liquidez</h4>
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <RatioBar 
                     label="Deuda/Equity" 
                     value={debt.debt_to_equity} 
@@ -224,6 +226,7 @@ export function FinancialsTab({ data, info }: FinancialsTabProps) {
                     good={50}
                     bad={100}
                     inverse
+                    metricKey="debt_to_equity"
                   />
                   <RatioBar 
                     label="Current Ratio" 
@@ -231,6 +234,7 @@ export function FinancialsTab({ data, info }: FinancialsTabProps) {
                     max={3}
                     good={1.5}
                     bad={1}
+                    metricKey="current_ratio"
                   />
                   <RatioBar 
                     label="Quick Ratio" 
@@ -238,6 +242,7 @@ export function FinancialsTab({ data, info }: FinancialsTabProps) {
                     max={3}
                     good={1}
                     bad={0.5}
+                    metricKey="quick_ratio"
                   />
                 </div>
               </div>
@@ -246,23 +251,26 @@ export function FinancialsTab({ data, info }: FinancialsTabProps) {
         )}
 
         {/* Growth */}
-        {growth && (
+        {growth && (growth.revenue_growth != null || growth.earnings_growth != null || growth.earnings_quarterly_growth != null) && (
           <SectionCard title="Crecimiento" icon="📈">
             <div className="grid grid-cols-1 gap-4">
               <GrowthMetric 
                 label="Crecimiento de Ingresos" 
                 value={growth.revenue_growth}
                 icon="💹"
+                metricKey="revenue_growth"
               />
               <GrowthMetric 
                 label="Crecimiento de Ganancias" 
                 value={growth.earnings_growth}
                 icon="📊"
+                metricKey="earnings_growth"
               />
               <GrowthMetric 
                 label="Crecimiento Trimestral" 
                 value={growth.earnings_quarterly_growth}
                 icon="📅"
+                metricKey="earnings_quarterly_growth"
               />
             </div>
           </SectionCard>
@@ -276,23 +284,25 @@ export function FinancialsTab({ data, info }: FinancialsTabProps) {
                 label="Dividendo Anual" 
                 value={dividends.dividend_rate != null ? formatPrice(dividends.dividend_rate) : 'N/A'}
                 icon="💰"
+                metricKey="dividend_rate"
               />
               <MetricCard 
                 label="Rendimiento" 
                 value={dividends.dividend_yield != null ? formatPercent(dividends.dividend_yield) : 'N/A'}
                 colorClass={getValueStatus(dividends.dividend_yield, { good: 0.03, bad: 0 })}
                 icon="📊"
+                metricKey="dividend_yield"
               />
               <MetricCard 
                 label="Payout Ratio" 
                 value={formatPercent(dividends.payout_ratio)}
                 colorClass={getValueStatus(dividends.payout_ratio, { good: 0.6, bad: 0.8, inverse: true })}
-                tooltip="% de ganancias pagadas como dividendos"
+                metricKey="payout_ratio"
               />
               <MetricCard 
                 label="Promedio 5 Años" 
                 value={dividends.five_year_avg_dividend_yield != null ? formatPercent(dividends.five_year_avg_dividend_yield, true) : 'N/A'}
-                tooltip="Rendimiento promedio de dividendos en 5 años"
+                metricKey="five_year_avg_dividend_yield"
               />
             </div>
           </SectionCard>
@@ -337,17 +347,23 @@ function PriceTargetBar({ low, mean, high, current }: { low: number; mean?: numb
   );
 }
 
-function RatioBar({ label, value, max, good, bad, inverse }: { 
+function RatioBar({ label, value, max, good, bad, inverse, metricKey }: { 
   label: string; 
   value?: number; 
   max: number;
   good: number;
   bad: number;
   inverse?: boolean;
+  metricKey?: string;
 }) {
+  const tooltipData = metricKey ? getMetricTooltip(metricKey) : null;
+
   if (value == null) return (
     <div className="flex justify-between items-center">
-      <span className="text-sm text-gray-600">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className="text-sm text-gray-600">{label}</span>
+        {tooltipData && <span className="text-gray-400 text-xs">ⓘ</span>}
+      </div>
       <span className="text-sm text-gray-400">N/A</span>
     </div>
   );
@@ -363,10 +379,13 @@ function RatioBar({ label, value, max, good, bad, inverse }: {
     else if (value <= bad) color = 'bg-red-500';
   }
 
-  return (
-    <div>
+  const content = (
+    <div className={`pb-2 ${tooltipData ? 'cursor-help' : ''}`}>
       <div className="flex justify-between items-center mb-1">
-        <span className="text-sm text-gray-600">{label}</span>
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-gray-600">{label}</span>
+          {tooltipData && <span className="text-gray-400 text-xs">ⓘ</span>}
+        </div>
         <span className="text-sm font-medium">{formatDecimal(value)}</span>
       </div>
       <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -374,29 +393,56 @@ function RatioBar({ label, value, max, good, bad, inverse }: {
       </div>
     </div>
   );
+
+  if (tooltipData) {
+    return (
+      <Tooltip content={<MetricTooltipContent data={tooltipData} />} position="top" wide block>
+        {content}
+      </Tooltip>
+    );
+  }
+
+  return content;
 }
 
-function GrowthMetric({ label, value, icon }: { label: string; value?: number | null; icon: string }) {
+function GrowthMetric({ label, value, icon, metricKey }: { label: string; value?: number | null; icon: string; metricKey?: string }) {
+  const tooltipData = metricKey ? getMetricTooltip(metricKey) : null;
+
   if (value == null) {
-    return (
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+    const emptyContent = (
+      <div className={`flex items-center justify-between p-3 bg-gray-50 rounded-lg ${tooltipData ? 'cursor-help' : ''}`}>
         <div className="flex items-center gap-3">
           <span className="text-2xl">{icon}</span>
-          <span className="text-sm text-gray-600">{label}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-gray-600">{label}</span>
+            {tooltipData && <span className="text-gray-400 text-xs">ⓘ</span>}
+          </div>
         </div>
         <span className="text-gray-400">N/A</span>
       </div>
     );
+
+    if (tooltipData) {
+      return (
+        <Tooltip content={<MetricTooltipContent data={tooltipData} />} position="top" wide>
+          {emptyContent}
+        </Tooltip>
+      );
+    }
+    return emptyContent;
   }
 
   const isPositive = value >= 0;
   const displayValue = formatPercent(value);
 
-  return (
-    <div className={`flex items-center justify-between p-3 rounded-lg ${isPositive ? 'bg-green-50' : 'bg-red-50'}`}>
+  const content = (
+    <div className={`flex items-center justify-between p-3 rounded-lg ${isPositive ? 'bg-green-50' : 'bg-red-50'} ${tooltipData ? 'cursor-help' : ''}`}>
       <div className="flex items-center gap-3">
         <span className="text-2xl">{icon}</span>
-        <span className="text-sm text-gray-700">{label}</span>
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-gray-700">{label}</span>
+          {tooltipData && <span className="text-gray-400 text-xs">ⓘ</span>}
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <span className={`text-xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
@@ -405,4 +451,14 @@ function GrowthMetric({ label, value, icon }: { label: string; value?: number | 
       </div>
     </div>
   );
+
+  if (tooltipData) {
+    return (
+      <Tooltip content={<MetricTooltipContent data={tooltipData} />} position="top" wide>
+        {content}
+      </Tooltip>
+    );
+  }
+
+  return content;
 }

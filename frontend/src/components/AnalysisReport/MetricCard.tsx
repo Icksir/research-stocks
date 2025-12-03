@@ -1,3 +1,6 @@
+import { Tooltip } from './Tooltip';
+import { getMetricTooltip, MetricTooltipContent } from './metricTooltips';
+
 interface MetricCardProps {
   label: string;
   value?: string | number | null;
@@ -5,14 +8,22 @@ interface MetricCardProps {
   icon?: string;
   colorClass?: string;
   tooltip?: string;
+  metricKey?: string;
 }
 
-export function MetricCard({ label, value, subLabel, icon, colorClass = 'text-gray-800', tooltip }: MetricCardProps) {
-  return (
-    <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors" title={tooltip}>
+export function MetricCard({ label, value, subLabel, icon, colorClass = 'text-gray-800', tooltip, metricKey }: MetricCardProps) {
+  const tooltipData = metricKey ? getMetricTooltip(metricKey) : null;
+  
+  const cardContent = (
+    <div className={`bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors ${tooltipData ? 'cursor-help' : ''}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{label}</p>
+          <div className="flex items-center gap-1">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{label}</p>
+            {tooltipData && (
+              <span className="text-gray-400 text-xs mb-1">ⓘ</span>
+            )}
+          </div>
           <p className={`font-bold text-lg ${colorClass}`}>{value ?? 'N/A'}</p>
           {subLabel && <p className="text-xs text-gray-400 mt-1">{subLabel}</p>}
         </div>
@@ -20,6 +31,29 @@ export function MetricCard({ label, value, subLabel, icon, colorClass = 'text-gr
       </div>
     </div>
   );
+
+  if (tooltipData) {
+    return (
+      <Tooltip 
+        content={<MetricTooltipContent data={tooltipData} />} 
+        position="top"
+        wide
+      >
+        {cardContent}
+      </Tooltip>
+    );
+  }
+
+  // Fallback al tooltip simple si no hay metricKey pero sí hay tooltip string
+  if (tooltip) {
+    return (
+      <Tooltip content={tooltip} position="top">
+        {cardContent}
+      </Tooltip>
+    );
+  }
+
+  return cardContent;
 }
 
 interface MetricRowProps {

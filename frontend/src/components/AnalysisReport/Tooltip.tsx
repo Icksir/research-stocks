@@ -1,71 +1,183 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 interface TooltipProps {
   content: string | React.ReactNode;
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   wide?: boolean;
+  block?: boolean;
 }
 
-export function Tooltip({ content, children, position = 'top', wide = false }: TooltipProps) {
+interface TooltipPosition {
+  top: number;
+  left: number;
+}
+
+export function Tooltip({ content, children, position = 'top', wide = false, block = false }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [isPositioned, setIsPositioned] = useState(false);
   const [actualPosition, setActualPosition] = useState(position);
+  const [tooltipPos, setTooltipPos] = useState<TooltipPosition>({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isVisible && tooltipRef.current && containerRef.current) {
-      const tooltip = tooltipRef.current.getBoundingClientRect();
-      const container = containerRef.current.getBoundingClientRect();
-      
-      // Ajustar posición si se sale de la pantalla
-      if (position === 'top' && container.top - tooltip.height < 10) {
-        setActualPosition('bottom');
-      } else if (position === 'bottom' && container.bottom + tooltip.height > window.innerHeight - 10) {
-        setActualPosition('top');
-      } else if (position === 'left' && container.left - tooltip.width < 10) {
-        setActualPosition('right');
-      } else if (position === 'right' && container.right + tooltip.width > window.innerWidth - 10) {
-        setActualPosition('left');
-      } else {
-        setActualPosition(position);
+  const calculatePosition = useCallback(() => {
+    if (!containerRef.current || !tooltipRef.current) return;
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+    const gap = 8;
+
+    let newPosition = position;
+    let top = 0;
+    let left = 0;
+
+    // Calcular posición inicial según la preferencia
+    switch (position) {
+      case 'top':
+        top = containerRect.top - tooltipRect.height - gap;
+        left = containerRect.left + (containerRect.width / 2) - (tooltipRect.width / 2);
+        if (top < 10) newPosition = 'bottom';
+        break;
+      case 'bottom':
+        top = containerRect.bottom + gap;
+        left = containerRect.left + (containerRect.width / 2) - (tooltipRect.width / 2);
+        if (top + tooltipRect.height > window.innerHeight - 10) newPosition = 'top';
+        break;
+      case 'left':
+        top = containerRect.top + (containerRect.height / 2) - (tooltipRect.height / 2);
+        left = containerRect.left - tooltipRect.width - gap;
+        if (left < 10) newPosition = 'right';
+        break;
+      case 'right':
+        top = containerRect.top + (containerRect.height / 2) - (tooltipRect.height / 2);
+        left = containerRect.right + gap;
+        if (left + tooltipRect.width > window.innerWidth - 10) newPosition = 'left';
+        break;
+    }
+
+    // Recalcular si la posición cambió
+    if (newPosition !== position) {
+      switch (newPosition) {
+        case 'top':
+          top = containerRect.top - tooltipRect.height - gap;
+          left = containerRect.left + (containerRect.width / 2) - (tooltipRect.width / 2);
+          break;
+        case 'bottom':
+          top = containerRect.bottom + gap;
+          left = containerRect.left + (containerRect.width / 2) - (tooltipRect.width / 2);
+          break;
+        case 'left':
+          top = containerRect.top + (containerRect.height / 2) - (tooltipRect.height / 2);
+          left = containerRect.left - tooltipRect.width - gap;
+          break;
+        case 'right':
+          top = containerRect.top + (containerRect.height / 2) - (tooltipRect.height / 2);
+          left = containerRect.right + gap;
+          break;
       }
     }
-  }, [isVisible, position]);
 
-  const positionClasses = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+    // Ajustar para que no se salga de la pantalla horizontalmente
+    if (left < 10) left = 10;
+    if (left + tooltipRect.width > window.innerWidth - 10) {
+      left = window.innerWidth - tooltipRect.width - 10;
+    }
+
+    // Ajustar para que no se salga verticalmente
+    if (top < 10) top = 10;
+    if (top + tooltipRect.height > window.innerHeight - 10) {
+      top = window.innerHeight - tooltipRect.height - 10;
+    }
+
+    setActualPosition(newPosition);
+    setTooltipPos({ top, left });
+    setIsPositioned(true);
+  }, [position]);
+
+  useEffect(() => {
+    if (isVisible) {
+      // Pequeño delay para que el tooltip se renderice primero
+      requestAnimationFrame(() => {
+        calculatePosition();
+      });
+    }
+  }, [isVisible, calculatePosition]);
+
+  const arrowStyles: Record<string, React.CSSProperties> = {
+    top: {
+      bottom: -6,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      borderLeft: '6px solid transparent',
+      borderRight: '6px solid transparent',
+      borderTop: '6px solid #1f2937',
+    },
+    bottom: {
+      top: -6,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      borderLeft: '6px solid transparent',
+      borderRight: '6px solid transparent',
+      borderBottom: '6px solid #1f2937',
+    },
+    left: {
+      right: -6,
+      top: '50%',
+      transform: 'translateY(-50%)',
+      borderTop: '6px solid transparent',
+      borderBottom: '6px solid transparent',
+      borderLeft: '6px solid #1f2937',
+    },
+    right: {
+      left: -6,
+      top: '50%',
+      transform: 'translateY(-50%)',
+      borderTop: '6px solid transparent',
+      borderBottom: '6px solid transparent',
+      borderRight: '6px solid #1f2937',
+    },
   };
 
-  const arrowClasses = {
-    top: 'top-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-gray-800',
-    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-gray-800',
-    left: 'left-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent border-l-gray-800',
-    right: 'right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-gray-800',
+  const handleMouseEnter = () => {
+    setIsPositioned(false);
+    setIsVisible(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsVisible(false);
+    setIsPositioned(false);
   };
 
   return (
     <div 
       ref={containerRef}
-      className="relative inline-block"
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}
+      className={block ? 'block w-full' : 'inline-block'}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {children}
       
-      {isVisible && (
+      {isVisible && createPortal(
         <div
           ref={tooltipRef}
-          className={`absolute z-50 ${positionClasses[actualPosition]}`}
+          style={{
+            position: 'fixed',
+            top: tooltipPos.top,
+            left: tooltipPos.left,
+            zIndex: 99999,
+            pointerEvents: 'none',
+            opacity: isPositioned ? 1 : 0,
+            transition: 'opacity 0.1s ease-in-out',
+          }}
         >
           <div className={`bg-gray-800 text-white text-sm rounded-lg py-3 px-4 shadow-xl ${wide ? 'w-80' : 'max-w-sm min-w-[200px]'}`}>
             {content}
-            <div className={`absolute w-0 h-0 border-[6px] ${arrowClasses[actualPosition]}`} />
+            <div style={{ position: 'absolute', width: 0, height: 0, ...arrowStyles[actualPosition] }} />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
